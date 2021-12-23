@@ -18,6 +18,7 @@ class ICMPPacket:
                              self.identifier,
                              self.seq)
         packet += b'0' * data_len
+        print(packet)
         checksum = ICMPPacket._calculate_checksum(packet)
 
         return packet[:2] + checksum + packet[4:]
