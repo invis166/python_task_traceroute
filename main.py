@@ -17,17 +17,19 @@ def main(dst, timeout, max_ttl, packet_size, requests_count, interval):
     asyncio.run(traceroute.traceroute())
     result = traceroute.get_result()
 
-    for rec, time in sorted(result.items(), key=lambda r, t: t):
-        line = []
-        if time:
+    for rec in result:
+        line = [f'{rec.ttl:2}']
+        if rec.ip:
             try:
                 host_name = socket.gethostbyaddr(rec.ip)[0]
                 line.append(host_name)
             except socket.herror:
                 line.append(rec.ip)
-            line.append(rec.ip)
-        for t in time:
-            line.append(str(t * 1000))
+            line.append(f'({rec.ip}) ')
+        else:
+            line.append('* * *')
+        for t in rec.respond_time:
+            line.append(f'{t * 1000} ms ')
         print(' '.join(line))
 
 

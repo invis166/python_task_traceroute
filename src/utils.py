@@ -1,4 +1,5 @@
 import socket
+import struct
 
 
 def parse_ipv4_header(data: bytes, offset=0) -> tuple[int, str, str]:
@@ -7,3 +8,7 @@ def parse_ipv4_header(data: bytes, offset=0) -> tuple[int, str, str]:
     destination_ip = socket.inet_ntoa(data[offset + 16: offset + 20])
 
     return ip_header_len, source_ip, destination_ip
+
+
+def get_seq_from_icmp(data: bytes, offset=0) -> int:
+    return struct.unpack('!H', data[offset + 6: offset + 8])[0]
