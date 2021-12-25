@@ -11,6 +11,7 @@ from src.icmp_packet import ICMPPacket
 ECHO_RESPONSE = 0
 TTL_RESPONSE = 11
 
+
 class Traceroute:
     def __init__(self, dest, max_ttl=30, timeout=200, packet_size=40, requests_count=3, interval=0):
         self.dest = socket.gethostbyname(dest)
@@ -31,7 +32,7 @@ class Traceroute:
     async def traceroute(self):
         await asyncio.gather(self._start_sender(), self._start_receiver())
 
-    def get_result(self):
+    def get_result(self) -> list["TracerouteRecord"]:
         res = []
         for ttl in range(1, self.max_ttl):
             rec = self._responded[ttl]
@@ -40,6 +41,13 @@ class Traceroute:
                 break
 
         return res
+
+    def reset(self):
+        self._identifier = random.randint(0, 255)
+        self._curr_seq = 0
+        self._pending_requests = {}
+        self._is_reached_dst = False
+        self._responded = {}
 
     async def _start_sender(self):
         curr_ttl = 1
@@ -96,12 +104,11 @@ class Traceroute:
                 del self._pending_requests[seq]
                 return
 
-
             ttl = seq // self.requests_count + 1
             self._responded[ttl].ip = source_ip
             self._responded[ttl].respond_time.append(respond_time)
 
-    def _get_ping_icmp_packet(self):
+    def _get_ping_icmp_packet(self) -> bytes:
         packet = ICMPPacket(8, 0, self._curr_seq, self._identifier, self.packet_size)
 
         return packet.build()
@@ -117,4 +124,4 @@ class Traceroute:
 class TracerouteRecord:
     ip: str
     ttl: int
-    respond_time: list[float] = field(default_factory=lambda: [])
+    respond_time: list[float] = field(default_factory=lambda: [])  # плохое название
