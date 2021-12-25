@@ -1,16 +1,18 @@
 import random
 import asyncio
 import socket
-import struct
-from datetime import datetime
+import time
 from dataclasses import dataclass, field
 
 from src.utils import parse_ipv4_header, get_seq_from_icmp
 from src.icmp_packet import ICMPPacket
 
 
+ECHO_RESPONSE = 0
+TTL_RESPONSE = 11
+
 class Traceroute:
-    def __init__(self, dest, max_ttl=30, timeout=2, packet_size=40, requests_count=3, interval=0):
+    def __init__(self, dest, max_ttl=30, timeout=200, packet_size=40, requests_count=3, interval=0):
         self.dest = socket.gethostbyname(dest)
         self.max_ttl = max_ttl
         self.timeout = timeout
@@ -22,7 +24,7 @@ class Traceroute:
         self._socket.setblocking(False)
         self._identifier = random.randint(0, 255)
         self._curr_seq = 0
-        self._pending_requests: dict[int, datetime] = {}
+        self._pending_requests: dict[int, float] = {}
         self._is_reached_dst = False
         self._responded: dict[int, TracerouteRecord] = {}
 
@@ -64,14 +66,14 @@ class Traceroute:
     def _send_echo(self):
         packet = self._get_ping_icmp_packet()
         self._socket.sendto(packet, (self.dest, 0))
-        self._pending_requests[self._curr_seq] = datetime.now()
+        self._pending_requests[self._curr_seq] = time.perf_counter() * 1000
         self._curr_seq = (self._curr_seq + 1) % 256
 
     def _handle_response(self, resp: bytes):
         ip_header_len, source_ip, _ = parse_ipv4_header(resp)
         message_type = resp[ip_header_len]
-        if message_type == 11 or message_type == 0:
-            if message_type == 11:
+        if message_type == TTL_RESPONSE or message_type == ECHO_RESPONSE:
+            if message_type == TTL_RESPONSE:
                 icmp_header_len = 8
                 offset_to_nested_ip = ip_header_len + icmp_header_len
                 nested_ip_header_len, _, nested_ip_dest = parse_ipv4_header(resp, offset_to_nested_ip)
@@ -89,12 +91,13 @@ class Traceroute:
             if source_ip == self.dest:
                 self._is_reached_dst = True
 
-            respond_time = (datetime.now() - self._pending_requests[seq]).total_seconds()
+            respond_time = (time.perf_counter() * 1000 - self._pending_requests[seq])
             if respond_time > self.timeout:
                 del self._pending_requests[seq]
                 return
 
-            ttl = seq // 3 + 1
+
+            ttl = seq // self.requests_count + 1
             self._responded[ttl].ip = source_ip
             self._responded[ttl].respond_time.append(respond_time)
 
@@ -104,10 +107,10 @@ class Traceroute:
         return packet.build()
 
     def _clear_timed_out_requests(self):
-        now = datetime.now()
-        self._pending_requests = {req: dt
-                                  for req, dt in self._pending_requests.items()
-                                  if (now - dt).total_seconds() < self.timeout}
+        now = time.perf_counter() * 1000
+        self._pending_requests = {req: t
+                                  for req, t in self._pending_requests.items()
+                                  if (now - t) < self.timeout}
 
 
 @dataclass
@@ -115,9 +118,3 @@ class TracerouteRecord:
     ip: str
     ttl: int
     respond_time: list[float] = field(default_factory=lambda: [])
-
-
-if __name__ == '__main__':
-    t = Traceroute('ulearn.me', max_ttl=5, requests_count=3)
-    asyncio.run(t.traceroute())
-    print(t._responded)
