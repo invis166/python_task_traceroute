@@ -10,7 +10,7 @@ def traceroute_fixt() -> Traceroute:
     return Traceroute('')
 
 
-def test_send_echo_callSendto():
+def test_send_echo_callSendtoOneTime():
     with patch('socket.socket'):
         traceroute = Traceroute('')
         traceroute._send_echo()
