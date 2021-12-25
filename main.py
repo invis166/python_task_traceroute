@@ -6,7 +6,7 @@ from src.traceroute import Traceroute, TracerouteRecord
 
 
 @click.command()
-@click.option('-t', '--timeout', default=2, required=False)
+@click.option('-t', '--timeout', default=200, required=False)
 @click.option('-n', '--max_ttl', default=32, required=False)
 @click.option('-s', '--packet_size', default=40, required=False)
 @click.option('-c', '--requests_count', default=3, required=False)
@@ -29,7 +29,7 @@ def main(dst, timeout, max_ttl, packet_size, requests_count, interval):
         else:
             line.append('* * *')
         for t in rec.respond_time:
-            line.append(f'{t * 1000} ms ')
+            line.append(f'{round(t, 2)} ms ')
         print(' '.join(line))
 
 
