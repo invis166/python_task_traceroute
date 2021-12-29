@@ -1,6 +1,6 @@
 import random
 import asyncio
-import socket
+import logging
 import time
 from dataclasses import dataclass, field
 
@@ -10,6 +10,8 @@ from src.icmp_packet import ICMPPacket
 
 ECHO_RESPONSE = 0
 TTL_RESPONSE = 11
+
+logging.basicConfig(filename='log.log', level=logging.DEBUG)
 
 
 class Traceroute:
@@ -110,7 +112,11 @@ class Traceroute:
 
             ttl = seq // self.requests_count + 1
             self._responded[ttl].ip = source_ip
+            if len(self._responded[ttl].respond_time) == self.requests_count:
+                logging.log(level=logging.ERROR, msg=f'alarm {source_ip=} {self._identifier=} {identifier=} {seq=} {ttl=}')
+            logging.log(level=logging.DEBUG, msg=f'got resp {source_ip=} {self._identifier=} {identifier=} {seq=} {ttl=}')
             self._responded[ttl].respond_time.append(respond_time)
+            del self._pending_requests[seq]
 
     def _get_ping_icmp_packet(self) -> bytes:
         packet = ICMPPacket(8, 0, self._curr_seq, self._identifier, self.packet_size)
