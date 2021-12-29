@@ -1,8 +1,8 @@
 import click
-import asyncio
-import socket
+import curses
 
 from src.traceroute import Traceroute, TracerouteRecord
+from src.ui import TracerouteMonitoringUI
 
 
 @click.command()
@@ -13,24 +13,16 @@ from src.traceroute import Traceroute, TracerouteRecord
 @click.option('-i', '--interval', default=0, required=False)
 @click.argument('dst')
 def main(dst, timeout, max_ttl, packet_size, requests_count, interval):
-    traceroute = Traceroute(dst, max_ttl, timeout, packet_size, requests_count, interval)
-    asyncio.run(traceroute.traceroute())
-    result = traceroute.get_result()
-
-    for rec in result:
-        line = [f'{rec.ttl:2}']
-        if rec.ip:
-            try:
-                host_name = socket.gethostbyaddr(rec.ip)[0]
-                line.append(host_name)
-            except socket.herror:
-                line.append(rec.ip)
-            line.append(f'({rec.ip}) ')
-        else:
-            line.append('* * *')
-        for t in rec.respond_time:
-            line.append(f'{round(t, 2)} ms ')
-        print(' '.join(line))
+    traceroute = Traceroute(
+        dest=dst,
+        max_ttl=max_ttl,
+        timeout=timeout,
+        packet_size=packet_size,
+        requests_count=requests_count,
+        interval=interval
+    )
+    app = TracerouteMonitoringUI(traceroute)
+    curses.wrapper(app.main)
 
 
 if __name__ == '__main__':
