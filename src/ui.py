@@ -49,7 +49,7 @@ class TracerouteMonitoringUI:
 
     def _make_lines(self) -> list:
         lines = []
-        header = ['ttl', 'host', 'Loss%', 'Sent', 'LastResp', 'AvgResp', 'BstResp', 'WrstResp']
+        header = ['ttl', 'host', 'Loss%', 'Sent', 'LastResp', 'AvgResp', 'BestResp', 'WorstResp']
         lines.append(header)
         for ttl, stat in self._stat.items():
             if stat.host == '':
@@ -79,7 +79,7 @@ class TracerouteMonitoringUI:
             self._stat[ttl].last_resp_time = avg_record_respond_time
             if self._stat[ttl].best_resp_time == 0:
                 self._stat[ttl].best_resp_time = avg_record_respond_time
-            else:
+            elif avg_record_respond_time != 0:
                 self._stat[ttl].best_resp_time = min(self._stat[ttl].best_resp_time, avg_record_respond_time)
             self._stat[ttl].worst_resp_time = max(self._stat[ttl].worst_resp_time, avg_record_respond_time)
             self._stat[ttl]._total_resp_time += sum(traceroute_stat.respond_time)
@@ -89,7 +89,11 @@ class TracerouteMonitoringUI:
         logging.log(level=logging.DEBUG, msg='reset')
         asyncio.run(self._traceroute.traceroute())
 
-        return self._traceroute.get_result()
+        result = self._traceroute.get_result()
+        if result[-1].ip == self._traceroute.dest:
+            self._traceroute.max_ttl = len(result) + 1
+
+        return result
 
 
 @dataclass
