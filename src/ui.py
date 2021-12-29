@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from src.traceroute import Traceroute, TracerouteRecord
 
 
-logging.basicConfig(filename='log.log', level=logging.DEBUG)
+logging.basicConfig(filename='log.log', level=logging.ERROR)
 
 
 class TracerouteMonitoringUI:
@@ -66,7 +66,7 @@ class TracerouteMonitoringUI:
     def _update_stat(self, data: list[TracerouteRecord]):
         for traceroute_stat in data:
             if len(traceroute_stat.respond_time) > self._traceroute.requests_count:
-                logging.log(level=logging.DEBUG, msg=f'{traceroute_stat}')
+                logging.log(level=logging.ERROR, msg=f'{traceroute_stat}')
             ttl = traceroute_stat.ttl
             self._stat.setdefault(ttl, StatRecord(ttl=ttl, host=traceroute_stat.ip))
 
@@ -107,7 +107,7 @@ class StatRecord:
     def lost_percentage(self):
         if self.sent_packets == 0:
             return 0
-        return round((self.responded_packets * 100) / self.sent_packets, 2)
+        return round(100 - (self.responded_packets * 100) / self.sent_packets, 2)
 
     @property
     def average_response_time(self):
