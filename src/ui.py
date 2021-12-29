@@ -30,13 +30,11 @@ class TracerouteMonitoringUI:
         self._stdscr.clear()
 
         lines = self._make_lines()
-        logging.log(level=logging.DEBUG, msg=f'{lines}')
 
         offset = 0
         formatted_lines = [[] for j in range(len(lines))]
         for j in range(len(lines[0])):
             offset = len(max(lines, key=lambda line: len(line[j]))[j])
-            logging.log(level=logging.DEBUG, msg=f'{offset} {j}')
             for i, line in enumerate(lines):
                 if j == 1:
                     field = f'{line[j]:<{offset}}'
@@ -51,7 +49,7 @@ class TracerouteMonitoringUI:
 
     def _make_lines(self) -> list:
         lines = []
-        header = ['ttl', 'host', 'Lost', 'Sent', 'LastResp', 'AvgResp', 'BstResp', 'WrstResp']
+        header = ['ttl', 'host', 'Loss%', 'Sent', 'LastResp', 'AvgResp', 'BstResp', 'WrstResp']
         lines.append(header)
         for ttl, stat in self._stat.items():
             if stat.host == '':
@@ -79,7 +77,10 @@ class TracerouteMonitoringUI:
                 avg_record_respond_time = round(sum(traceroute_stat.respond_time) / responded_count, 2)
             self._stat[ttl].responded_packets += responded_count
             self._stat[ttl].last_resp_time = avg_record_respond_time
-            self._stat[ttl].best_resp_time = min(self._stat[ttl].best_resp_time, avg_record_respond_time)
+            if self._stat[ttl].best_resp_time == 0:
+                self._stat[ttl].best_resp_time = avg_record_respond_time
+            else:
+                self._stat[ttl].best_resp_time = min(self._stat[ttl].best_resp_time, avg_record_respond_time)
             self._stat[ttl].worst_resp_time = max(self._stat[ttl].worst_resp_time, avg_record_respond_time)
             self._stat[ttl]._total_resp_time += sum(traceroute_stat.respond_time)
 
