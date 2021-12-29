@@ -12,3 +12,7 @@ def parse_ipv4_header(data: bytes, offset=0) -> tuple[int, str, str]:
 
 def get_seq_from_icmp(data: bytes, offset=0) -> int:
     return struct.unpack('!H', data[offset + 6: offset + 8])[0]
+
+
+def get_identifier_from_icmp(data: bytes, offset=0) -> int:
+    return struct.unpack('!H', data[offset + 4: offset + 6])[0]

@@ -4,7 +4,7 @@ import socket
 import time
 from dataclasses import dataclass, field
 
-from src.utils import parse_ipv4_header, get_seq_from_icmp
+from src.utils import *
 from src.icmp_packet import ICMPPacket
 
 
@@ -90,10 +90,14 @@ class Traceroute:
                     return
 
                 offset_to_nested_icmp = ip_header_len + icmp_header_len + nested_ip_header_len
+                identifier = get_identifier_from_icmp(resp, offset_to_nested_icmp)
                 seq = get_seq_from_icmp(resp, offset_to_nested_icmp)
             else:
+                identifier = get_identifier_from_icmp(resp, ip_header_len)
                 seq = get_seq_from_icmp(resp, ip_header_len)
 
+            if identifier != self._identifier:
+                return
             if seq not in self._pending_requests:
                 return
             if source_ip == self.dest:
