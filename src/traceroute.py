@@ -58,7 +58,7 @@ class Traceroute:
             self._socket.setsockopt(socket.SOL_IP, socket.IP_TTL, curr_ttl)
             for j in range(self.requests_count):
                 self._send_echo()
-                await asyncio.sleep(self.interval)
+                await asyncio.sleep(self.interval * 0.001)
             curr_ttl += 1
 
         self._is_reached_dst = True
